@@ -3,12 +3,12 @@
 module EventMachine
   module WebSocket
     module Framing07
-      
+
       def initialize_framing
         @data = MaskedString.new
         @application_data_buffer = '' # Used for MORE frames
       end
-      
+
       def process_data(newdata)
         error = false
 
@@ -34,7 +34,7 @@ module EventMachine
               error = true
               next
             end
-            
+
             # Only using the last 4 bytes for now, till I work out how to
             # unpack 8 bytes. I'm sure 4GB frames will do for now :)
             l = @data.getbytes(pointer+4, 4).unpack('N').first
@@ -47,7 +47,7 @@ module EventMachine
               error = true
               next
             end
-            
+
             l = @data.getbytes(pointer, 2).unpack('n').first
             pointer += 2
             l
@@ -76,7 +76,7 @@ module EventMachine
           application_data = @data.getbytes(pointer, payload_length)
           pointer += payload_length
           @data.unset_mask if mask
-          
+
           # Throw away data up to pointer
           @data.slice!(0...pointer)
 
@@ -103,7 +103,7 @@ module EventMachine
           end
         end # end while
       end
-      
+
       def send_frame(frame_type, application_data)
         debug [:sending_frame, frame_type, application_data]
 
@@ -117,7 +117,8 @@ module EventMachine
         byte1 = opcode | 0b10000000 # fin bit set, rsv1-3 are 0
         frame << byte1
 
-        length = application_data.size
+        length = (application_data.respond_to?(:bytesize) ? application_data.bytesize : application_data.size)
+
         if length <= 125
           byte2 = length # since rsv4 is 0
           frame << byte2
